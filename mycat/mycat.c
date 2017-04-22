@@ -38,7 +38,7 @@ static int read_input_to_output(int input_fd, char * filename){
 		//keep track of the difference between the ammount of data read
 		//and the ammount of data written
 		offset = 0;
-		while (bytes_read > bytes_written) {
+		while (bytes_read > 0) {
 			if ((bytes_written = write(output_fd, buffer + offset, (size_t) bytes_read)) < 0) {//err
 				err(1, "stdout");
 			}
