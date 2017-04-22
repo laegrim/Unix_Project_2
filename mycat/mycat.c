@@ -40,6 +40,7 @@ static int read_input_to_output(int input_fd, char * filename){
 		offset = 0;
 		while (bytes_read > 0) {
 			if ((bytes_written = write(output_fd, buffer + offset, (size_t) bytes_read)) < 0) {//err
+				free(buffer);
 				err(1, "stdout");
 			}
 			bytes_read -= bytes_written;
@@ -48,9 +49,11 @@ static int read_input_to_output(int input_fd, char * filename){
 	}
 
 	if (bytes_read < 0) {//erri
+		free(buffer);
 		warn("%s", filename);
 		return 1;
-	}		
+	}
+	free(buffer);	
 }
 
 int main(int argc, char ** argv){
