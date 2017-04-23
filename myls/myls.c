@@ -1,19 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <dirent.h>
-#include <string.h>
-#include <sys/stat> //For file information
+#include <dirent.h> //For directory entries
+#include <string.h> //Manipulate strings
+#include <getopt.h> //For getopt function
+#include <sys/stat.h> //For file information
+#include <stdbool.h> //Boolean types and values
+#include <time.h> //For Time types
+#include <sysexits.h> //For preferred exit codes
+#include <pwd.h> //For Password structure
+#include <grp.h> //For group structure
 
 //global delcarion directory
 static char *directory = "_";
 //stucture declaration of options
 struct Options {
 	bool option_l;
-}
+};
 
 //option initialization
-static void initializeOptions {struct Options *opts) {
+static void initializeOptions (struct Options *opts) {
 	opts->option_l = false;
 }
 
@@ -63,31 +69,37 @@ void print_time (time_t mod_time) {
 	time(&currTime);
 	struct tm *t = localtime(&currTime);
 	//Get current month
-	const int currMonth = t->tm_mn;
+	const int currMonth = t->tm_mon;
 	//Get current year
 	const int currYear = 1970 + t->tm_year;
 	
+	// get mod time and year
+   	 t = localtime(&mod_time);
+    	const int mod_mon = t->tm_mon;
+    	const int mod_yr = 1970 + t->tm_year;
+
 	//Create format
-	const char *format = ((mod_yr == curr_yr) &&(mod_mon >= (curr_mon -6))) ? "%b %e %H:%M" : "%b %e %Y";
-	chat timeBuff[128];
+	const char *format = ((mod_yr == currYear) &&(mod_mon >= (currMonth -6))) ? "%b %e %H:%M" : "%b %e %Y";
+	char timeBuff[128];
 	strftime(timeBuff, sizeof(timeBuff), format, t);
 	printf("%s", timeBuff);
 }
 
 struct stat getStats(const char *file) {
-	sprintf(<pathname>, "%s\%s", period, file);
+	char path[1024];
+	sprintf(path, "%s\%s", directory, file);
 	struct stat sb;
 	
-	if (lstat(<pathname>, &sb) < 0) {
+	if (lstat(path, &sb) < 0) {
 		perror("path error");
-		return 1;
+		exit(EX_IOERR);
 	}
 	
 	return sb;
 }
 
 bool is_dir(const char *file) {
-		struct stat sb = get_stats(file);
+		struct stat sb = getStats(file);
 		
 		//Get information from sybolic link file
 		if (lstat(file, &sb) < 0) {
@@ -126,7 +138,7 @@ bool checkDir(const char *dir, const char *file) {
 	return false;
 }
 void print_stats(char *dir, char *file, struct Options opts) {
-	if (!checkDir(dir, filename)) {
+	if (!checkDir(dir, file)) {
 		return;
 	}
 	
@@ -142,18 +154,18 @@ void print_stats(char *dir, char *file, struct Options opts) {
 	print_filetype(sb.st_mode);
 	print_permissions(sb.st_mode);
 	//print number of hard links
-	printf(" %d", sb.st_nlink);
+	printf(" %ld", sb.st_nlink);
 	//Search and print for user entry with matching user id in sb structure and access to username pw_name
-	printf("%10s ", getpwuid(sb.st_uid)->pw_name
+	printf("%10s ", getpwuid(sb.st_uid)->pw_name);
 	//Search and print for group entry with matching grup id in sb structure and point to group gr_name
 	printf("%10s", getgrgid(sb.st_gid)->gr_name);
 	
 	//Print size of designated file in long
-	printf("%10s ", (long)sb.st_size);
+	printf("%10ld ", (long)sb.st_size);
 	
 	print_time(sb.st_mtime);
 	printf(" %s", file);
-	putchar(\n\);
+	putchar('\n');
 }
 
 void printDir(char *dir, struct Options opts) {
@@ -171,19 +183,19 @@ void printDir(char *dir, struct Options opts) {
 		dirp = readdir(pdir);
 	}
 	
-	directry = dir;
+	directory = dir;
 	
 	for (i = 0; i < count; i++) {
-		print_stats(dir, dirArray[i], opts;
+		print_stats(dir, dirArray[i], opts);
 	}
 	closedir(pdir);
 	free(dirArray);
 }
-void readOption(int count, char *args[], struct Options opts) {
+void readDirs(int count, char *args[], struct Options opts) {
 	int i;
 	//boolean to determine if there are multiple directories to display
 	//optind is the index of the element to be processed
-	const bool multipleDirectories = (count - optind) >= 2);
+	const bool multipleDirectories = (count - optind) >= 2;
 	
 	for (i = optind; i < count; i++) {
 		if (!is_dir(args[i])) {
@@ -193,7 +205,7 @@ void readOption(int count, char *args[], struct Options opts) {
 		}
 		
 		if(multipleDirectories) {
-			printf("\n%s:\n", args[i];
+			printf("\n%s:\n", args[i]);
 		}
 		
 		if(!checkDir(".", args[i])) {
@@ -204,7 +216,7 @@ void readOption(int count, char *args[], struct Options opts) {
 }
 
 //argc passed as count and argv as array to be optioned
-int main(argc, char *argv[]) {
-	readOption(argc, argv, getOption(argc, argv);
+int main(int argc, char *argv[]) {
+	readDirs(argc, argv, getOption(argc, argv));
 	return 0;
 }
