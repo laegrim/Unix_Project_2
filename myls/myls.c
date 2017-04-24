@@ -5,6 +5,7 @@
 #include <string.h> //Manipulate strings
 #include <getopt.h> //For getopt function
 #include <sys/stat.h> //For file information
+#include <sys/types.h> //For additional data types
 #include <stdbool.h> //Boolean types and values
 #include <time.h> //For Time types
 #include <sysexits.h> //For preferred exit codes
@@ -12,7 +13,7 @@
 #include <grp.h> //For group structure
 
 //global delcarion directory
-static char *directory = "_";
+static char *GLOBALDIR = ".";
 //stucture declaration of options
 struct Options {
 	bool option_l;
@@ -33,8 +34,8 @@ struct Options getOption(int count, char*args[]) {
 		switch (opt) {
 			case 'l':
 				opts.option_l = true; break;
-			default:
-				perror("Option not found");
+			case '?':
+				exit(EX_USAGE);
 		}
 	}
 	return opts;
@@ -87,11 +88,11 @@ void print_time (time_t mod_time) {
 
 struct stat getStats(const char *file) {
 	char path[1024];
-	sprintf(path, "%s\%s", directory, file);
+	sprintf(path, "%s\%s", GLOBALDIR, file);
 	struct stat sb;
 	
-	if (lstat(path, &sb) < 0) {
-		perror("path error");
+	if (stat(path, &sb) < 0) {
+		perror("Error in getstats\n");
 		exit(EX_IOERR);
 	}
 	
@@ -137,7 +138,14 @@ bool checkDir(const char *dir, const char *file) {
 	closedir(pdir);
 	return false;
 }
-void print_stats(char *dir, char *file, struct Options opts) {
+
+//To compare to strings in order to sort files by lex
+static int compareLex(const void *p1, const void *p2) {
+	const char *str1 = *(const void **)p1;
+	const char *str2 = *(const void **)p2;
+	return strcasecmp(str1, str2);
+}
+void printStats(char *dir, char *file, struct Options opts) {
 	if (!checkDir(dir, file)) {
 		return;
 	}
@@ -147,7 +155,7 @@ void print_stats(char *dir, char *file, struct Options opts) {
 		return;
 	}
 	
-	directory = dir;
+	GLOBALDIR = dir;
 	
 	struct stat sb = getStats(file);
 	
@@ -171,7 +179,7 @@ void print_stats(char *dir, char *file, struct Options opts) {
 void printDir(char *dir, struct Options opts) {
 	DIR *pdir = opendir(dir);
 	struct dirent *dirp = readdir(pdir);
-	long alloc = 10000;
+	long alloc = 30000;
 	char **dirArray = malloc(alloc * sizeof(char*));
 	long int count = 0;
 	long int i;
@@ -180,13 +188,28 @@ void printDir(char *dir, struct Options opts) {
 	}
 	
 	while (dirp) {
+		const bool noHidden = dirp->d_name[0] == '.';
+	
+		if (!noHidden) {
+			if (count >= alloc) {
+				alloc *= 2;
+				dirArray = realloc(dirArray, alloc * sizeof(char*));
+				if (!dirArray) {
+					abort();
+				}
+			}
+			dirArray[count] = dirp->d_name;
+			count++;
+		}
 		dirp = readdir(pdir);
 	}
 	
-	directory = dir;
+	GLOBALDIR = dir;
 	
+	qsort(dirArray, count, sizeof(char*), compareLex);
+
 	for (i = 0; i < count; i++) {
-		print_stats(dir, dirArray[i], opts);
+		printStats(dir, dirArray[i], opts);
 	}
 	closedir(pdir);
 	free(dirArray);
@@ -195,11 +218,15 @@ void readDirs(int count, char *args[], struct Options opts) {
 	int i;
 	//boolean to determine if there are multiple directories to display
 	//optind is the index of the element to be processed
+	
+	if (optind == count) {
+		printDir(".", opts);
+	}
 	const bool multipleDirectories = (count - optind) >= 2;
 	
 	for (i = optind; i < count; i++) {
 		if (!is_dir(args[i])) {
-			print_stats(".", args[i], opts);
+			printStats(".", args[i], opts);
 			//Move to the next iteration of i in for loop
 			continue;
 		}
