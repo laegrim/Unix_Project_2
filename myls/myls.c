@@ -88,7 +88,7 @@ void print_time (time_t mod_time) {
 
 struct stat getStats(const char *file) {
 	char path[1024];
-	sprintf(path, "%s\%s", GLOBALDIR, file);
+	sprintf(path, "%s/%s", GLOBALDIR, file);
 	struct stat sb;
 	
 	if (stat(path, &sb) < 0) {
