@@ -102,8 +102,8 @@ struct stat getStats(const char *file) {
 bool is_dir(const char *file) {
 		struct stat sb = getStats(file);
 		
-		//Get information from sybolic link file
-		if (lstat(file, &sb) < 0) {
+		//Get information from file
+		if (stat(file, &sb) < 0) {
 			perror("not a directory");
 			return false;
 		}
@@ -116,7 +116,7 @@ bool checkDir(const char *dir, const char *file) {
 	DIR *pdir = opendir(dir);
 	
 	if(!pdir) {
-		perror("No direcotry");
+		perror("No directory");
 		return false;
 	}
 	
@@ -151,7 +151,7 @@ void printStats(char *dir, char *file, struct Options opts) {
 	}
 	
 	if (!opts.option_l) {
-		printf("%s\n", file);
+		printf("%s  ", file);
 		return;
 	}
 	
@@ -245,5 +245,6 @@ void readDirs(int count, char *args[], struct Options opts) {
 //argc passed as count and argv as array to be optioned
 int main(int argc, char *argv[]) {
 	readDirs(argc, argv, getOption(argc, argv));
+	putchar('\n');
 	return 0;
 }
