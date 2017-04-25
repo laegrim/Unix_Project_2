@@ -185,12 +185,12 @@ void printStats(char *dir, char *file, struct Options opts) {
 	//print number of hard links
 	printf(" %ld", sb.st_nlink);
 	//Search and print for user entry with matching user id in sb structure and access to username pw_name
-	printf("%10s ", getpwuid(sb.st_uid)->pw_name);
+	printf(" %s ", getpwuid(sb.st_uid)->pw_name);
 	//Search and print for group entry with matching grup id in sb structure and point to group gr_name
-	printf("%10s", getgrgid(sb.st_gid)->gr_name);
+	printf("%s ", getgrgid(sb.st_gid)->gr_name);
 	
 	//Print size of designated file in long
-	printf("%10ld ", (long)sb.st_size);
+	printf("%ld ", (long)sb.st_size);
 	
 	printTime(sb.st_mtime);
 	printf(" %s", file);
