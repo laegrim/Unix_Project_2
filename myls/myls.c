@@ -190,7 +190,7 @@ void printStats(char *dir, char *file, struct Options opts) {
 	printf("%s ", getgrgid(sb.st_gid)->gr_name);
 	
 	//Print size of designated file in long
-	printf("%ld ", (long)sb.st_size);
+	printf("%5ld ", (long)sb.st_size);
 	
 	printTime(sb.st_mtime);
 	printf(" %s", file);
