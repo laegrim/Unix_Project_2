@@ -75,6 +75,7 @@ void recursiveTraverse(const char *source, const char *target){
                 continue;
             }
             struct stat info;
+	    stat(entry->d_name, &info);
             if(S_ISDIR(info.st_mode))
             {
                 //make corresponding directory in target folder here
