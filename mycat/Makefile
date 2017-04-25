@@ -1,7 +1,9 @@
+.PHONY: all clean
+all: mycat
+
 mycat: mycat.c
 	gcc -o mycat mycat.c
 
-.PHONY: clean
 clean:
 	rm mycat
 

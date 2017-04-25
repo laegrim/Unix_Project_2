@@ -1,12 +1,11 @@
 BIN=myls mycp mycat mysh
 
-.PHONY: all
+.PHONY: all $(BIN) clean
 all: $(BIN)
 		
 $(BIN): 
 	@$(MAKE) -C $@
 
-.PHONY: clean
 clean:
 	$(foreach DIR, $(BIN), $(MAKE) -C $(DIR) $@;)
 
