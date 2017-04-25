@@ -30,18 +30,21 @@ int mycp(char** args){}
 int myls(char** args){}
 int mycd(char** args)
 {
+    char path[MAX_BUF];
+    strcpy(path, args[1]);
+
     mycdfl = 0;
-    printf("here");
-    if(args[1] == NULL)
+    char cwd[MAX_BUF + 1];
+    if(path[0] != '/')
     {
-        printf("Error: CD");
+        getcwd(cwd, sizeof(cwd));
+        strcat(cwd, "/");
+        strcat(cwd, path);
+        chdir(cwd);
     }
     else 
     {
-        if(chdir(args[1]) != 0)
-        {
-            printf("Error: cd");
-        }
+        chdir(path);
     }
     return 1;
 }
@@ -49,7 +52,6 @@ int mypwd(char** args){}
 
 int check_builtins(char** args)
 {
-    printf("%s\n", args[0]);
     for(int i = 0; i < num_builtins(); i++)
     {
         if(strcmp(args[0], builtin_str[i]) == 0)
@@ -70,11 +72,10 @@ char** parse(char* cmd)
     while(tok != NULL)
     {
         targs[i] = tok;
-       // printf("%s\n",tok);
         i++;
         tok = strtok(NULL, " <>|"); 
     }
-    targs[i++] = NULL;
+    targs[i] = NULL;
     num_args = i;
     return targs;
 }
@@ -111,7 +112,6 @@ char** tokenizer(char* cmd)
     {
         del(token, ' ');
         toargs[i] = token;
-        //printf("%s\n",token);
         i++;
         token = strtok(NULL, "<>|"); 
     }
@@ -275,11 +275,6 @@ void sredir(char* line)
     }
 }
 
-//search string for special characters
-//tokenize without spaces
-//pass tokens to parser 
-
-
 int main(int argc, char **argv)
 {
     char *cmd = NULL;
@@ -299,9 +294,7 @@ int main(int argc, char **argv)
         {
             if(cmd[strlen(cmd) - 1] == '\n') cmd[strlen(cmd) - 1] = '\0'; 
            
-            args = parse(cmd);
-
-            if(check_builtins(args) == 0) break;
+            //if(check_builtins(args) == 0) break;
             if(rdirin == 0)
             {
                 targs = tokenizer(cmd);
@@ -328,7 +321,9 @@ int main(int argc, char **argv)
             {
                 args = parse(cmd);
                 if(strcmp(args[0], "exit") == 0) break;
+                if(check_builtins(args) == 0) break;
                 if(myexec(args) == 0) break;
+                
             }
 
             rdirin = 1;
