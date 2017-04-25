@@ -63,28 +63,6 @@ int copyFiles(char *source, char *target)
 
 }
 
-                        
-
-
-
-int dostat(char *filename)
-{
-    struct stat fileInfo;
-    
-    printf("Next File %s\n", filename);
-    if(stat(filename, &fileInfo) >=0)
-    {
-        if(S_ISREG(fileInfo.st_mode))
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-}
-
 
 int getFilesInDir(source)
 {
@@ -107,54 +85,6 @@ int getFilesInDir(source)
     return EXIT_SUCCESS;
     
 
-}
-
-
-
-int copyDir(char *source, char *destination)
-{
-    DIR *dir_ptr;
-//    struct dirent *direntp;
-    char tempDest[strlen(destination)+1];
-    char tempSrc[strlen(source)+1];
-    strcat(destination, "/");
-    strcat(source, "/");
-    strcpy(tempDest, destination);
-    strcpy(tempSrc, source);
-    
-    char *fileN;
-    struct stat fileinfo;
-    
-    printf("RIGHT BEFORE COPYING FILES in copyDir()\n");
-    printf("before strcat tempDest=%s\n", tempDest);
-    
-    
-    if( (dir_ptr = opendir(source)) == NULL )
-    {
-        fprintf(stderr, "cp1: cannot open %s for copying\n", source);
-        return 0;
-    }
-    else
-    {
-        while( (direntp = readdir(dir_ptr)))
-        {
-            printf("direntp DNAME is %s\n", direntp->d_name);
-            fileN = direntp->d_name;
-            printf("File name before Reg Check is %s\n", fileN);
-            
-            if(dostat(direntp->d_name))
-            {
-                strcat(tempDest, direntp->d_name);
-                printf("after strcat tempDest=%s\n", tempDest);
-                strcat(tempSrc, direntp->d_name);
-                copyFiles(tempSrc, tempDest);
-                strcpy(tempDest, destination);
-                strcpy(tempSrc, source);
-            }
-        }
-        closedir(dir_ptr);
-        return 1;
-    }
 }
 
 
