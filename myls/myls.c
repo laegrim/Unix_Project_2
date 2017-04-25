@@ -14,7 +14,7 @@
 
 //global delcarion directory
 static char *GLOBALDIR = ".";
-//stucture declaration of options
+//stucture declaration for option l. Can be expanded for additional options
 struct Options {
 	bool option_l;
 };
@@ -24,24 +24,26 @@ static void initializeOptions (struct Options *opts) {
 	opts->option_l = false;
 }
 
-//Structure to get options
+//Structure to get options.  Would expand case arguements for additional option flexibility
 struct Options getOption(int count, char*args[]) {
 	struct Options opts;
 	initializeOptions(&opts);
 	int opt;
 	
+	//This while loop will determimne if the option in use is -l.
 	while ((opt = getopt(count, args, "l")) != -1) {
 		switch (opt) {
 			case 'l':
 				opts.option_l = true; break;
 			case '?':
+				//Exit to be called for wrong number of arguments or bad syntax in parameter opt
 				exit(EX_USAGE);
 		}
 	}
 	return opts;
 }
 
-static void print_filetype(mode_t mode) {
+static void printFiletype(mode_t mode) {
 	//Determine which char to write to stdout
 	//S_IFMT is the bit mask we will use to determine file type with bitwise &
 	switch(mode & S_IFMT) {
@@ -50,7 +52,7 @@ static void print_filetype(mode_t mode) {
 	}
 } 
 
-static void print_permissions(mode_t mode) {
+static void printPermissions(mode_t mode) {
 	//Determine permissions for file with info stored
 	//Place a char based on outcome of &
 	putchar((mode & S_IRUSR) ? 'r' : '-');
@@ -65,7 +67,7 @@ static void print_permissions(mode_t mode) {
 }
 
 //Function to display time in correct format
-void print_time (time_t mod_time) {
+void printTime (time_t mod_time) {
 	time_t currTime;
 	time(&currTime);
 	struct tm *t = localtime(&currTime);
@@ -86,11 +88,15 @@ void print_time (time_t mod_time) {
 	printf("%s", timeBuff);
 }
 
+//This structure will be called if additional information for files in directory is required
 struct stat getStats(const char *file) {
 	char path[1024];
+	//sprintf will generate formatted path with directory and file
 	sprintf(path, "%s/%s", GLOBALDIR, file);
+	//Use of stat structure to be used to get info of file
 	struct stat sb;
 	
+	//If statement to catch if we can get specified directory
 	if (stat(path, &sb) < 0) {
 		perror("Error in getstats\n");
 		exit(EX_IOERR);
@@ -99,24 +105,30 @@ struct stat getStats(const char *file) {
 	return sb;
 }
 
-bool is_dir(const char *file) {
+//Return boolean value to determine if file is a directory
+bool isDir(const char *file) {
+		//Set sb structure info to the info found for file
 		struct stat sb = getStats(file);
 		
-		//Get information from sybolic link file
-		if (lstat(file, &sb) < 0) {
+		//Determine if info obtained for sb is typical of a directory
+		if (stat(file, &sb) < 0) {
 			perror("not a directory");
 			return false;
 		}
+
 		//S_IFDIR to check if file type saved in st_mode is a directory
 		//Ternary conditional to return true or false depending on what is saved in st_mode
 		return (sb.st_mode & S_IFDIR) ? true : false;
 }
 
+//Function to retrun boolean value set to whether specified file is in directory
 bool checkDir(const char *dir, const char *file) {
+	//Open a directory stream	
 	DIR *pdir = opendir(dir);
 	
+	//Check if we successufly obtained a directory stream
 	if(!pdir) {
-		perror("No direcotry");
+		perror("Not directory");
 		return false;
 	}
 	
@@ -139,58 +151,74 @@ bool checkDir(const char *dir, const char *file) {
 	return false;
 }
 
-//To compare to strings in order to sort files by lex
+//To compare two strings in order to sort files by lex
 static int compareLex(const void *p1, const void *p2) {
 	const char *str1 = *(const void **)p1;
 	const char *str2 = *(const void **)p2;
+	//Will return an integer value signifying greater than, equal to, or less than 0
 	return strcasecmp(str1, str2);
 }
+
+// Function that will obtain directory, file, and designated options (if any) and then print the info required
 void printStats(char *dir, char *file, struct Options opts) {
+	//Function will not print if specified file is not in directory	
 	if (!checkDir(dir, file)) {
 		return;
 	}
 	
+	//If -l option is not in use then we will just print file name
 	if (!opts.option_l) {
-		printf("%s\n", file);
+		printf("%s  ", file);
 		return;
 	}
 	
+	//Set global directory
 	GLOBALDIR = dir;
 	
+	//Store the infe for file to be displayed
 	struct stat sb = getStats(file);
 	
-	print_filetype(sb.st_mode);
-	print_permissions(sb.st_mode);
+	//Print a '-' or 'd' determined by either file or directory
+	printFiletype(sb.st_mode);
+	//Print permissions with the help of designated headers
+	printPermissions(sb.st_mode);
 	//print number of hard links
 	printf(" %ld", sb.st_nlink);
 	//Search and print for user entry with matching user id in sb structure and access to username pw_name
-	printf("%10s ", getpwuid(sb.st_uid)->pw_name);
+	printf(" %s ", getpwuid(sb.st_uid)->pw_name);
 	//Search and print for group entry with matching grup id in sb structure and point to group gr_name
-	printf("%10s", getgrgid(sb.st_gid)->gr_name);
+	printf("%s ", getgrgid(sb.st_gid)->gr_name);
 	
 	//Print size of designated file in long
-	printf("%10ld ", (long)sb.st_size);
+	printf("%5ld ", (long)sb.st_size);
 	
-	print_time(sb.st_mtime);
+	printTime(sb.st_mtime);
 	printf(" %s", file);
 	putchar('\n');
 }
 
+//Function to print what lies in directory
 void printDir(char *dir, struct Options opts) {
+	//Open directory stream	
 	DIR *pdir = opendir(dir);
+	//Prepare to examine contets of directory
 	struct dirent *dirp = readdir(pdir);
 	long alloc = 30000;
+	//Prepare to dynamically allocate for directory contents
 	char **dirArray = malloc(alloc * sizeof(char*));
 	long int count = 0;
 	long int i;
+	//Exit program if we could not make dirArray
 	if (!dirArray) {
 		abort();
 	}
 	
 	while (dirp) {
+		//Do not show hidden files because we are not using -a
 		const bool noHidden = dirp->d_name[0] == '.';
 	
 		if (!noHidden) {
+			//Allocation for dirArray
 			if (count >= alloc) {
 				alloc *= 2;
 				dirArray = realloc(dirArray, alloc * sizeof(char*));
@@ -198,6 +226,7 @@ void printDir(char *dir, struct Options opts) {
 					abort();
 				}
 			}
+			//Get file name and store in dirArray
 			dirArray[count] = dirp->d_name;
 			count++;
 		}
@@ -206,8 +235,10 @@ void printDir(char *dir, struct Options opts) {
 	
 	GLOBALDIR = dir;
 	
+	//Sort strings held in dirArray
 	qsort(dirArray, count, sizeof(char*), compareLex);
-
+	
+	//Print the info for or specified directory
 	for (i = 0; i < count; i++) {
 		printStats(dir, dirArray[i], opts);
 	}
@@ -216,16 +247,18 @@ void printDir(char *dir, struct Options opts) {
 }
 void readDirs(int count, char *args[], struct Options opts) {
 	int i;
-	//boolean to determine if there are multiple directories to display
-	//optind is the index of the element to be processed
 	
+	//optind is the index of the element to be processed
+	//Print contents of current directory if no optioned presented
 	if (optind == count) {
 		printDir(".", opts);
 	}
+
+	//boolean to determine if there are multiple directories to display
 	const bool multipleDirectories = (count - optind) >= 2;
 	
 	for (i = optind; i < count; i++) {
-		if (!is_dir(args[i])) {
+		if (!isDir(args[i])) {
 			printStats(".", args[i], opts);
 			//Move to the next iteration of i in for loop
 			continue;
@@ -245,5 +278,6 @@ void readDirs(int count, char *args[], struct Options opts) {
 //argc passed as count and argv as array to be optioned
 int main(int argc, char *argv[]) {
 	readDirs(argc, argv, getOption(argc, argv));
+	putchar('\n');
 	return 0;
 }

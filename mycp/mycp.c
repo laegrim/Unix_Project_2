@@ -6,6 +6,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
+
 
 #define BUFFER_SIZE 1024
 
@@ -61,13 +63,29 @@ int copyFiles(char *source, char *target)
 
 }
 
-int isDirectory(const char *path) {
-    struct stat statbuf;
-    if (stat(path, &statbuf) != 0)
-        return 0;
-    return S_ISDIR(statbuf.st_mode);
-}
 
+int getFilesInDir(source)
+{
+    DIR* dirp;
+    struct dirent* direntp;
+    dirp = opendir(source);
+    if( dirp == NULL ) {
+        perror( "can't open %s", source);
+    } else {
+        for(;;) {
+            direntp = readdir( dirp );
+            if( direntp == NULL ) break;
+            
+            printf( "%s\n", direntp->d_name );
+        }
+        
+        closedir( dirp );
+    }
+    
+    return EXIT_SUCCESS;
+    
+
+}
 
 
 int main(int argc, char* argv[])
@@ -83,12 +101,6 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
     
-    if(argc != 3)
-    {
-        printf("\nIllegal number of args\n");
-        exit(EXIT_FAILURE);
-    }
-    
     // checks to see if recursive copy is called, else checks if directories are being copied, else calls regular copy function
     if(strncmp(argv[1], "-R", 5) == 0)
     {
@@ -99,6 +111,7 @@ int main(int argc, char* argv[])
         if(isDirectory(source) && isDirectory(target))
         {
             printf("CALL DIRECTORY COPY FUNCTION\n");
+            copyDir(source, target);
         }
         
     }
