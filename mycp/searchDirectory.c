@@ -10,6 +10,7 @@
 #include <limits.h>
 
 #define BUFFER_SIZE 1024
+extern int errno;
 
 int copyFiles(char *source, char *target)
 {
@@ -75,6 +76,7 @@ void recursiveTraverse(const char *source, const char *target){
                 continue;
             }
             struct stat info;
+	    chdir(source);
 	    stat(entry->d_name, &info);
             if(S_ISDIR(info.st_mode))
             {
