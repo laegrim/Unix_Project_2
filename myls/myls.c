@@ -248,7 +248,7 @@ void printDir(char *dir, struct Options opts) {
 void readDirs(int count, char *args[], struct Options opts) {
 	int i;
 	
-`	//optind is the index of the element to be processed
+	//optind is the index of the element to be processed
 	//Print contents of current directory if no optioned presented
 	if (optind == count) {
 		printDir(".", opts);
