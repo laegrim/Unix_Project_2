@@ -8,21 +8,56 @@
 #define MAX_BUF 512
 
 int num_args, num_toke;
-int rdirin = 1, rdirout = 1, pipefl = 1;
+int rdirin = 1, rdirout = 1, pipefl = 1, mycdfl = 1;
 
 int mycat(char** args);
 int mycp(char** args);
 int myls(char** args);
 int mycd(char** args);
-int pwd(char** args);
+int mypwd(char** args);
 
-char *builtin_str[] = { "mycat", "mycp", "myls", "mycd", "pwd" };
+char *builtin_str[] = { "mycat", "mycp", "myls", "mycd", "mypwd" };
 
-int (*builtin_func[]) (char**) = { &mycat, &mycp, &myls, &mycd, &pwd };
+int (*builtin_func[]) (char**) = { &mycat, &mycp, &myls, &mycd, &mypwd };
 
-int num_buitins()
+int num_builtins()
 {
     return sizeof(builtin_str) / sizeof(char*);
+}
+
+int mycat(char** args){}
+int mycp(char** args){}
+int myls(char** args){}
+int mycd(char** args)
+{
+    mycdfl = 0;
+    printf("here");
+    if(args[1] == NULL)
+    {
+        printf("Error: CD");
+    }
+    else 
+    {
+        if(chdir(args[1]) != 0)
+        {
+            printf("Error: cd");
+        }
+    }
+    return 1;
+}
+int mypwd(char** args){}
+
+int check_builtins(char** args)
+{
+    printf("%s\n", args[0]);
+    for(int i = 0; i < num_builtins(); i++)
+    {
+        if(strcmp(args[0], builtin_str[i]) == 0)
+        {
+            return (*builtin_func[i])(args);
+        }
+    }
+    return 1;
 }
 
 char** parse(char* cmd)
@@ -263,12 +298,15 @@ int main(int argc, char **argv)
         if(strlen(cmd) > 1)
         {
             if(cmd[strlen(cmd) - 1] == '\n') cmd[strlen(cmd) - 1] = '\0'; 
+           
+            args = parse(cmd);
 
+            if(check_builtins(args) == 0) break;
             if(rdirin == 0)
             {
                 targs = tokenizer(cmd);
                 args = parse(cmd);
-                if(myredir(targs, args ) == 0) break;
+                if(myredir(targs, args) == 0) break;
             }
             else if(rdirout == 0)
             {
@@ -278,8 +316,13 @@ int main(int argc, char **argv)
             }
             else if(pipefl == 0)
             {
-                args = tokenizer(cmd);
+                targs = tokenizer(cmd);
+                args = parse(cmd);
                 if(pipefork(args) == 0) break;
+            }
+            else if(mycdfl == 0)
+            {
+                mycdfl = 1;
             }
             else
             {
@@ -293,6 +336,8 @@ int main(int argc, char **argv)
             pipefl = 1;
         }
     }
+    free(args);
+    free(targs);
     return 0;
 }
     
