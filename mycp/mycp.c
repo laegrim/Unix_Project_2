@@ -6,6 +6,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
+
 
 #define BUFFER_SIZE 1024
 
@@ -61,13 +63,99 @@ int copyFiles(char *source, char *target)
 
 }
 
-int isDirectory(const char *path) {
-    struct stat statbuf;
-    if (stat(path, &statbuf) != 0)
-        return 0;
-    return S_ISDIR(statbuf.st_mode);
+                        
+
+
+
+int dostat(char *filename)
+{
+    struct stat fileInfo;
+    
+    printf("Next File %s\n", filename);
+    if(stat(filename, &fileInfo) >=0)
+    {
+        if(S_ISREG(fileInfo.st_mode))
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 }
 
+
+int getFilesInDir(source)
+{
+    DIR* dirp;
+    struct dirent* direntp;
+    dirp = opendir(source);
+    if( dirp == NULL ) {
+        perror( "can't open %s", source);
+    } else {
+        for(;;) {
+            direntp = readdir( dirp );
+            if( direntp == NULL ) break;
+            
+            printf( "%s\n", direntp->d_name );
+        }
+        
+        closedir( dirp );
+    }
+    
+    return EXIT_SUCCESS;
+    
+
+}
+
+
+
+int copyDir(char *source, char *destination)
+{
+    DIR *dir_ptr;
+//    struct dirent *direntp;
+    char tempDest[strlen(destination)+1];
+    char tempSrc[strlen(source)+1];
+    strcat(destination, "/");
+    strcat(source, "/");
+    strcpy(tempDest, destination);
+    strcpy(tempSrc, source);
+    
+    char *fileN;
+    struct stat fileinfo;
+    
+    printf("RIGHT BEFORE COPYING FILES in copyDir()\n");
+    printf("before strcat tempDest=%s\n", tempDest);
+    
+    
+    if( (dir_ptr = opendir(source)) == NULL )
+    {
+        fprintf(stderr, "cp1: cannot open %s for copying\n", source);
+        return 0;
+    }
+    else
+    {
+        while( (direntp = readdir(dir_ptr)))
+        {
+            printf("direntp DNAME is %s\n", direntp->d_name);
+            fileN = direntp->d_name;
+            printf("File name before Reg Check is %s\n", fileN);
+            
+            if(dostat(direntp->d_name))
+            {
+                strcat(tempDest, direntp->d_name);
+                printf("after strcat tempDest=%s\n", tempDest);
+                strcat(tempSrc, direntp->d_name);
+                copyFiles(tempSrc, tempDest);
+                strcpy(tempDest, destination);
+                strcpy(tempSrc, source);
+            }
+        }
+        closedir(dir_ptr);
+        return 1;
+    }
+}
 
 
 int main(int argc, char* argv[])
@@ -83,12 +171,6 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
     
-    if(argc != 3)
-    {
-        printf("\nIllegal number of args\n");
-        exit(EXIT_FAILURE);
-    }
-    
     // checks to see if recursive copy is called, else checks if directories are being copied, else calls regular copy function
     if(strncmp(argv[1], "-R", 5) == 0)
     {
@@ -99,6 +181,7 @@ int main(int argc, char* argv[])
         if(isDirectory(source) && isDirectory(target))
         {
             printf("CALL DIRECTORY COPY FUNCTION\n");
+            copyDir(source, target);
         }
         
     }
