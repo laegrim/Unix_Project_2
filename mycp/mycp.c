@@ -7,12 +7,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
-
+#include <limits.h>
 
 #define BUFFER_SIZE 1024
-
-// Ryan Jalufka
-// C program to emulate cp command of bash
+extern int errno;
 
 int copyFiles(char *source, char *target)
 {
@@ -60,36 +58,52 @@ int copyFiles(char *source, char *target)
     }
     
     return 1;
-
+    
 }
 
 
-int getFilesInDir(source)
-{
-    DIR* dirp;
-    struct dirent* direntp;
-    dirp = opendir(source);
-    if( dirp == NULL ) {
-        perror( "can't open %s", source);
-    } else {
-        for(;;) {
-            direntp = readdir( dirp );
-            if( direntp == NULL ) break;
-            
-            printf( "%s\n", direntp->d_name );
+
+void recursiveTraverse(const char *source, const char *target){
+    DIR *dirp = opendir(source);
+    if(dirp)
+    {
+        char currentPath[PATH_MAX];
+        char buffer[PATH_MAX];
+        struct dirent *entry;
+        while((entry = readdir(dirp)) != NULL) {
+            if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            {
+                continue;
+            }
+            struct stat info;
+	    chdir(source);
+	    stat(entry->d_name, &info);
+            if(S_ISDIR(info.st_mode))
+            {
+                //make corresponding directory in target folder here
+                //mkdir(target);
+                sprintf(currentPath, "%s/%s", getcwd(buffer, PATH_MAX), entry->d_name);
+                printf("Current path to traverse: %s\n", currentPath);
+                recursiveTraverse(currentPath, target);
+            }
+            else if(S_ISREG(info.st_mode))
+            {
+                DIR *dirp2 = opendir(target);
+                struct dirent *targetEntry;
+                copyFiles(entry->d_name, target);
+                //Run regular file copy routine to target folder
+                printf("File copied...\n");
+            }
         }
-        
-        closedir( dirp );
     }
-    
-    return EXIT_SUCCESS;
-    
-
 }
+
+
 
 
 int main(int argc, char* argv[])
 {
+    printf("argv[1]: is %s\n", argv[1]);
     
     char *source;
     char *target;
@@ -108,12 +122,7 @@ int main(int argc, char* argv[])
         source = argv[2];
         target = argv[3];
         
-        if(isDirectory(source) && isDirectory(target))
-        {
-            printf("CALL DIRECTORY COPY FUNCTION\n");
-            copyDir(source, target);
-        }
-        
+        recursiveTraverse(source, target);
     }
     else
     {
@@ -122,4 +131,6 @@ int main(int argc, char* argv[])
         copyFiles(source, target);
     }
     exit(1);
+
+
 }

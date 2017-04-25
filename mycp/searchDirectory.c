@@ -81,14 +81,16 @@ void recursiveTraverse(const char *source, const char *target){
             if(S_ISDIR(info.st_mode))
             {
                 //make corresponding directory in target folder here
-                mkdir(target, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+                //mkdir(target);
                 sprintf(currentPath, "%s/%s", getcwd(buffer, PATH_MAX), entry->d_name);
                 printf("Current path to traverse: %s\n", currentPath);
                 recursiveTraverse(currentPath, target);
             }
             else if(S_ISREG(info.st_mode))
             {
-                copyFiles(currentPath, target);
+                DIR *dirp2 = opendir(target);
+                struct dirent *targetEntry;
+                copyFiles(entry->d_name, target);
                 //Run regular file copy routine to target folder
                 printf("File copied...\n");
             }
@@ -101,15 +103,34 @@ void recursiveTraverse(const char *source, const char *target){
 
 int main(int argc, char* argv[])
 {
-    
-    printf("STARTING MAIN... \n");
     printf("argv[1]: is %s\n", argv[1]);
     
-    const char* source = argv[1];
-    const char* target = argv[2];
+    char *source;
+    char *target;
     
-    printf("\nCalling recursive Traverse...\n");
-    recursiveTraverse(source, target);
+    // checks to see if too many args are given
+    if(strncmp(argv[1], "-R", 5) != 0 && argc > 4)
+    {
+        printf("\nIllegal number of args for -R option\n");
+        exit(EXIT_FAILURE);
+    }
     
-    return 0;
+    // checks to see if recursive copy is called, else checks if directories are being copied, else calls regular copy function
+    if(strncmp(argv[1], "-R", 5) == 0)
+    {
+        printf("RECURSIVE CP CALLED\n");
+        source = argv[2];
+        target = argv[3];
+        
+        recursiveTraverse(source, target);
+    }
+    else
+    {
+        source = argv[1];
+        target = argv[2];
+        copyFiles(source, target);
+    }
+    exit(1);
+
+
 }
