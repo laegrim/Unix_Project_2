@@ -1,4 +1,5 @@
 BIN=myls mycp mycat mysh
+CFLAGS=
 
 .PHONY: all $(BIN) clean
 all: $(BIN)
