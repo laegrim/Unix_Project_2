@@ -5,10 +5,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <err.h>
+#include <errno.h>
+
+extern int errno;
+static char * err_str;
 
 static int read_input_to_output(int input_fd, char * filename){
-
 
 	//get stdout
 	int output_fd = fileno(stdout);
@@ -23,13 +25,18 @@ static int read_input_to_output(int input_fd, char * filename){
 
 	//get information about fd
 	if (fstat(output_fd, &fd_info)) {//err
-		err(1, "%s", filename);
+		err_str = (char *) malloc(sizeof(char) * 100);
+		sprintf(err_str, "mycat: %s", filename);
+		perror(err_str);
+		free(err_str);
+		exit(1);
 	}
 	//set the blocksize
 	size_t blocksize = MAX(fd_info.st_blksize, 1024);
 	//allocate the buffer to be the blocksize
 	if ((buffer = (char *) malloc(blocksize)) == NULL) {//err
-		err(1, "buffer");
+		perror("mycat: buffer");
+		exit(1);
 	}
 	
 	//start the read write loop
@@ -41,16 +48,20 @@ static int read_input_to_output(int input_fd, char * filename){
 		while (bytes_read > 0) {
 			if ((bytes_written = write(output_fd, buffer + offset, (size_t) bytes_read)) < 0) {//err
 				free(buffer);
-				err(1, "stdout");
+				perror("stdout");
+				exit(1);
 			}
 			bytes_read -= bytes_written;
 			offset += bytes_written;
 		}
 	}
 
-	if (bytes_read < 0) {//erri
+	if (bytes_read < 0) {//err
 		free(buffer);
-		warn("%s", filename);
+		err_str = (char *) malloc(sizeof(char) * 100);
+		sprintf(err_str, "mycat: %s", filename);
+		perror(err_str);
+		free(err_str);
 		return 1;
 	}
 	free(buffer);	
@@ -73,7 +84,10 @@ int main(int argc, char ** argv){
 	else {
 		for (int i = 1; i < argc; i++) {
 			if((input_fd = open(argv[i], O_RDONLY)) < 0) {//err
-				warn("%s", argv[i]);
+				err_str = (char *) malloc(sizeof(char) * 100);
+				sprintf(err_str, "mycat: %s", argv[i]);
+				perror(err_str);
+				free(err_str);
 				status = 1;
 			}
 			else {
@@ -84,7 +98,8 @@ int main(int argc, char ** argv){
 	}
 	//attempt to close output stream
 	if (fclose(stdout)) {//err
-		err(1, "stdout");
+		perror("mycat: stdout");
+		exit(1);
 	}
 	//exit gracefully
 	exit(status);
